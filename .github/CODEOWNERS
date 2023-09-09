@@ -1,0 +1,6 @@
+* @marvinruder
+
+# Files containing dependencies are maintained by Renovate and do not have a code owner
+go.mod
+go.sum
+build/package/*
