@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "timezone": "UTC",
+  "schedule": ["after 7am"],
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "automergeSchedule": ["after 7am"],
+  "assigneesFromCodeOwners": true,
+  "updateLockFiles": true,
+  "rangeStrategy": "pin"
+}
