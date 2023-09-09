@@ -21,6 +21,9 @@ func setupSuite(t *testing.T, token string, zone string) func(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	os.Setenv("ZONE", "")
+	os.Setenv("TOKEN", "")
+
 	return func(t *testing.T) {
 		fmt.Println("Deleting test zone")
 		hcdnsZone.Delete(ctx)
@@ -31,7 +34,7 @@ func setupSuite(t *testing.T, token string, zone string) func(t *testing.T) {
 }
 
 func TestDynDnsHandler(t *testing.T) {
-	zone := "example.com"
+	zone := os.Getenv("ZONE")
 	token := os.Getenv("TOKEN")
 	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(zone+":"+token))
 
@@ -105,7 +108,7 @@ func TestDynDnsHandler(t *testing.T) {
 		{
 			name:            "Not FQDN (no hostname part)",
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=example.com",
+			urlParamString:  "?hostname=" + zone,
 			statusCode:      http.StatusBadRequest,
 			dynDnsErrorCode: NotFQDN,
 		},
@@ -119,14 +122,14 @@ func TestDynDnsHandler(t *testing.T) {
 		{
 			name:            "No IP address",
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com",
+			urlParamString:  "?hostname=dyndns." + zone,
 			statusCode:      http.StatusBadRequest,
 			dynDnsErrorCode: BadAgent,
 		},
 		{
 			name:            "Wrong IP address",
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=hello",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=hello",
 			statusCode:      http.StatusBadRequest,
 			dynDnsErrorCode: BadAgent,
 		},
@@ -135,7 +138,7 @@ func TestDynDnsHandler(t *testing.T) {
 			zoneEnv:         zone,
 			tokenEnv:        token,
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=127.0.0.1",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=127.0.0.1",
 			statusCode:      http.StatusCreated,
 			dynDnsErrorCode: "",
 			body:            "good 127.0.0.1",
@@ -145,7 +148,7 @@ func TestDynDnsHandler(t *testing.T) {
 			zoneEnv:         zone,
 			tokenEnv:        token,
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=::1",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=::1",
 			statusCode:      http.StatusCreated,
 			dynDnsErrorCode: "",
 			body:            "good ::1",
@@ -155,7 +158,7 @@ func TestDynDnsHandler(t *testing.T) {
 			zoneEnv:         zone,
 			tokenEnv:        token,
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=127.0.0.1,::1",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=127.0.0.1,::1",
 			statusCode:      http.StatusCreated,
 			dynDnsErrorCode: "",
 			body:            "nochg 127.0.0.1, ::1",
@@ -165,7 +168,7 @@ func TestDynDnsHandler(t *testing.T) {
 			zoneEnv:         zone,
 			tokenEnv:        token,
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=127.0.0.2,::1",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=127.0.0.2,::1",
 			statusCode:      http.StatusCreated,
 			dynDnsErrorCode: "",
 			body:            "good 127.0.0.2, ::1",
@@ -175,7 +178,7 @@ func TestDynDnsHandler(t *testing.T) {
 			zoneEnv:         zone,
 			tokenEnv:        token,
 			authHeader:      authHeader,
-			urlParamString:  "?hostname=dyndns.example.com&myip=127.0.0.2,::2",
+			urlParamString:  "?hostname=dyndns." + zone + "&myip=127.0.0.2,::2",
 			statusCode:      http.StatusCreated,
 			dynDnsErrorCode: "",
 			body:            "good 127.0.0.2, ::2",

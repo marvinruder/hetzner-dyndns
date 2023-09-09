@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+
+FROM golang:1.21.1-alpine as run
+
+ARG ZONE
+ARG TOKEN
+
+WORKDIR /src
+
+# Download dependencies as a separate step to take advantage of Docker's caching.
+# Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
+# Leverage bind mounts to go.sum and go.mod to avoid having to copy them into
+# the container.
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    go mod download -x
+
+# Test and build the application.
+# Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
+# Leverage a bind mount to the current directory to avoid having to copy the
+# source code into the container.
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
+    mkdir -p /coverage && \
+    go test -coverprofile=/coverage/coverage.out ./... && \
+    mkdir -p /extract && \
+    CGO_ENABLED=0 GOARCH=amd64 go build -o /extract/hetzner-dyndns_amd64 ./cmd/hetzner-dyndns && \
+    CGO_ENABLED=0 GOARCH=arm64 go build -o /extract/hetzner-dyndns_arm64 ./cmd/hetzner-dyndns
+
+FROM eclipse-temurin:17.0.8_7-jre as result
+
+# Download and extract Codacy coverage reporter
+RUN \
+  curl -Ls https://coverage.codacy.com/get.sh | sed 's/os_name=\$(uname)/os_name=$(uname)\nos_name_arch=$(uname -sm)/;s/if \[ "\$os_name" = "Linux" \] || \[ "\$os_name" = "Darwin" \]/if [ "$os_name_arch" = "Linux x86_64" ] || [ "$os_name_arch" = "Darwin x86_64" ]/' > /usr/local/bin/codacy-coverage && \
+  chmod +x /usr/local/bin/codacy-coverage && \
+  codacy-coverage download && \
+  mkdir -p /extract
+
+WORKDIR /coverage
+
+# Copy coverage reports and binaries from run stage
+COPY --from=run /coverage/. /coverage/.
+COPY --from=run /extract/. /extract/.
+
+ENTRYPOINT [ "codacy-coverage" ]
