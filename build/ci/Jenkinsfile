@@ -1,4 +1,4 @@
-node('hetzner-dyndns-build-arm64') {
+node('hetzner-dyndns-build') {
     withEnv([
         'imagename=marvinruder/hetzner-dyndns',
         'FORCE_COLOR=true'
