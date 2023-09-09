@@ -1,0 +1,16 @@
+services:
+  hetzner-dyndns:
+    build:
+      context: ../..
+      dockerfile: build/package/Dockerfile
+      target: final
+    ports:
+      - 8000:8000
+    x-develop:
+      watch:
+        - action: rebuild
+          path: ../../cmd
+        - action: rebuild
+          path: ../../internal
+        - action: rebuild
+          path: ../../go.mod
