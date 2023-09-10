@@ -24,7 +24,6 @@ node('hetzner-dyndns-build') {
 
                             // Prefetch Docker base images
                             sh """
-                            JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c '(curl -Ls https://raw.githubusercontent.com/$imagename/\$BRANCH_NAME/build/package/Dockerfile-prefetch-buildx | docker buildx build --builder hetzner-dyndns -) &'
                             JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c '(curl -Ls https://raw.githubusercontent.com/$imagename/\$BRANCH_NAME/build/package/Dockerfile-prefetch | docker build -) &'
                             """
                         }

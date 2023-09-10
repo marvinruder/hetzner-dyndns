@@ -13,7 +13,7 @@ LABEL \
   org.opencontainers.image.source="https://github.com/marvinruder/hetzner-dyndns" \
   org.opencontainers.image.vendor="Marvin A. Ruder" \
   org.opencontainers.image.licenses="MIT" \
-  org.opencontainers.image.version="0.0.0" \
+  org.opencontainers.image.version="0.1.0" \
   org.opencontainers.image.created=$BUILD_DATE
 
 # Create a non-privileged user that the app will run under.
@@ -33,7 +33,7 @@ USER appuser
 COPY bin/hetzner-dyndns-${TARGETARCH} /bin/hetzner-dyndns
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8245
 
 # What the container should run when it is started.
 ENTRYPOINT [ "/bin/hetzner-dyndns" ]
