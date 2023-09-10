@@ -104,7 +104,7 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 		fmt.Println("Error getting records: " + err.Error())
 		return &DynDnsError{Code: DNSErr}
 	}
-	fmt.Println("Got zone " + hcdnsZone.Name + " with name " + hcdnsZone.Name)
+	fmt.Println("Found zone " + hcdnsZone.Name)
 
 	// Check for hostname and IP parameters
 	hostname, ips := r.URL.Query().Get("hostname"), strings.Split(r.URL.Query().Get("myip"), ",")

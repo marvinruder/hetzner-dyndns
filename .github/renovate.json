@@ -11,5 +11,6 @@
   "automergeSchedule": ["after 7am"],
   "assigneesFromCodeOwners": true,
   "updateLockFiles": true,
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "rangeStrategy": "pin"
 }
