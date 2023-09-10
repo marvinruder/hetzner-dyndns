@@ -184,7 +184,7 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 		ipv6result = "good"
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	newIPs := ""
 	if ipv4 != "" && ipv6 != "" {
 		newIPs = ipv4 + ", " + ipv6
