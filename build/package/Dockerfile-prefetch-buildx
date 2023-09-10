@@ -1,3 +1,0 @@
-FROM scratch
-COPY --from=alpine:3.18.3 /etc/os-release /etc/os-release-alpine
-COPY --from=eclipse-temurin:17.0.8_7-jre /etc/os-release /etc/os-release-java
