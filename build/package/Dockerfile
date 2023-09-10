@@ -33,7 +33,7 @@ USER appuser
 COPY bin/hetzner-dyndns-${TARGETARCH} /bin/hetzner-dyndns
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8245
 
 # What the container should run when it is started.
 ENTRYPOINT [ "/bin/hetzner-dyndns" ]

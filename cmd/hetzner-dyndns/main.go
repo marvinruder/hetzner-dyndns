@@ -36,8 +36,8 @@ func main() {
 		fmt.Println("Will accept requests with correct token only")
 	}
 
-	fmt.Println("Starting server on port 8000")
-	err := http.ListenAndServe(":8000", nil)
+	fmt.Println("Starting server on port 8245")
+	err := http.ListenAndServe(":8245", nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Println("Server closed")
 	} else if err != nil {
