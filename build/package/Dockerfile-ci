@@ -2,9 +2,6 @@
 
 FROM golang:1.21.1-alpine as run
 
-ARG ZONE
-ARG TOKEN
-
 WORKDIR /src
 
 # Install any dependencies that are needed to build your application.
@@ -23,6 +20,9 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=go.mod,target=go.mod \
     --mount=type=bind,source=Makefile,target=Makefile \
     make -j dep
+
+ARG ZONE
+ARG TOKEN
 
 # Test and build the application.
 # Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
