@@ -10,6 +10,7 @@ WORKDIR /src
 # Install any dependencies that are needed to build your application.
 # Leverage a cache mount to /var/cache/apk/ to speed up subsequent builds.
 RUN --mount=type=cache,target=/var/cache/apk \
+    mkdir -p /coverage /extract && \
     apk --update add \
         make
 
