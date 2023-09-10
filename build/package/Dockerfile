@@ -30,7 +30,7 @@ RUN adduser \
 USER appuser
 
 # Copy the executable.
-COPY bin/hetzner-dyndns_${TARGETARCH} /bin/hetzner-dyndns
+COPY bin/hetzner-dyndns-${TARGETARCH} /bin/hetzner-dyndns
 
 # Expose the port that the application listens on.
 EXPOSE 8000
