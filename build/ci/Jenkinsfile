@@ -48,13 +48,13 @@ node('hetzner-dyndns-build') {
 
                 stage ('Build and test Docker Image') {
                     withCredentials([string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
-                        docker.build("$imagename:job$JOB_ID-run", '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com -f build/package/Dockerfile-run --force-rm .")
+                        docker.build("$imagename:job$JOB_ID-ci", '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com -f build/package/Dockerfile-ci --force-rm .")
                     }
 
                     // Copy build artifacts to workspace
                     sh """
                     mkdir -p bin
-                    id=\$(docker create $imagename:job$JOB_ID-run)
+                    id=\$(docker create $imagename:job$JOB_ID-ci)
                     docker cp \$id:/extract/. ./bin/.
                     docker rm -v \$id
                     """
@@ -65,7 +65,7 @@ node('hetzner-dyndns-build') {
                         stage ('Publish coverage results to Codacy') {
                             withCredentials([string(credentialsId: 'codacy-project-token-hetzner-dyndns', variable: 'CODACY_PROJECT_TOKEN')]) {
                                 // Publish coverage results by running a container from the test image
-                                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$imagename:job$JOB_ID-run report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H'); docker rmi $imagename:job$JOB_ID-run")
+                                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$imagename:job$JOB_ID-ci report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H'); docker rmi $imagename:job$JOB_ID-ci")
                             }
                         }
                     },
@@ -106,7 +106,7 @@ node('hetzner-dyndns-build') {
                 stage ('Cleanup') {
                     // Remove build artifacts
                     sh """
-                    docker rmi $imagename:job$JOB_ID $imagename:job$JOB_ID-run $imagename:job$JOB_ID-yarn || :
+                    docker rmi $imagename:job$JOB_ID $imagename:job$JOB_ID-ci $imagename:job$JOB_ID-yarn || :
                     rm -rf bin
                     """
                 }
