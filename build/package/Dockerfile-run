@@ -7,6 +7,12 @@ ARG TOKEN
 
 WORKDIR /src
 
+# Install any dependencies that are needed to build your application.
+# Leverage a cache mount to /var/cache/apk/ to speed up subsequent builds.
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk --update add \
+        make
+
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
 # Leverage bind mounts to go.sum and go.mod to avoid having to copy them into
@@ -14,7 +20,7 @@ WORKDIR /src
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=go.sum,target=go.sum \
     --mount=type=bind,source=go.mod,target=go.mod \
-    go mod download -x
+    make -j dep
 
 # Test and build the application.
 # Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
@@ -22,11 +28,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 # source code into the container.
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
-    mkdir -p /coverage && \
-    go test -coverprofile=/coverage/coverage.out ./... && \
-    mkdir -p /extract && \
-    CGO_ENABLED=0 GOARCH=amd64 go build -o /extract/hetzner-dyndns_amd64 ./cmd/hetzner-dyndns && \
-    CGO_ENABLED=0 GOARCH=arm64 go build -o /extract/hetzner-dyndns_arm64 ./cmd/hetzner-dyndns
+    make -j -W dep ci
 
 FROM eclipse-temurin:17.0.8_7-jre as result
 
