@@ -14,10 +14,10 @@ A proxy server for updating DNS records on Hetzner DNS using the DynDNS protocol
 
 ### Prerequisites
 
-* A DNS zone managed by Hetzner DNS
-* An API token for the Hetzner DNS API (obtainable from the [Hetzner DNS Console](https://dns.hetzner.com/settings/api-token))
-* A DynDNS client (e.g. a router) that supports the DynDNS protocol
-* A server with a static IP address that is reachable from the internet to run the proxy server on
+  * A DNS zone managed by Hetzner DNS
+  * An API token for the Hetzner DNS API (obtainable from the [Hetzner DNS Console](https://dns.hetzner.com/settings/api-token))
+  * A DynDNS client (e.g. a router) that supports the DynDNS protocol
+  * A server with a static IP address that is reachable from the internet to run the proxy server on
 
 ### Set up the server
 
@@ -53,12 +53,12 @@ The following environment variables are supported, none of which are required:
 
 To update a DNS record, configure your DynDNS client (e.g. a router) to use
 
-* the DNS zone (e.g. `example.com`) as the username,
-* the token (e.g. `eWVzLCBpIGFtIGEgdG9rZW4=`) as the password,
-* the desired dynamic hostname (e.g. `home.example.com`) as the hostname,
-* the hostname or public IP address of the server (e.g. `dyndns.example.com`) as the update server address,
-* the port of the server (default: `8245`) as the update server port, and
-* `HTTP` as the update protocol (or `HTTPS` if you use a reverse proxy with HTTPS support, which is recommended).
+  * the DNS zone (e.g. `example.com`) as the username,
+  * the token (e.g. `eWVzLCBpIGFtIGEgdG9rZW4=`) as the password,
+  * the desired dynamic hostname (e.g. `home.example.com`) as the hostname,
+  * the hostname or public IP address of the server (e.g. `dyndns.example.com`) as the update server address,
+  * the port of the server (default: `8245`) as the update server port, and
+  * `HTTP` as the update protocol (or `HTTPS` if you use a reverse proxy with HTTPS support, which is recommended).
 
 Your client will take care of identifying changes in its public IP address and sending the appropriate requests to the server, keeping the DNS record up to date.
 
@@ -68,10 +68,10 @@ A detailed description of the DynDNS protocol is published by Oracle [here](http
 
 ### Limitations of this implementation
 
-* Only the HTTP `GET` method is implemented.
-* Query parameters other than `hostname` and `myip` are not implemented.
-* Only one hostname can be updated per request.
-* It is not checked whether a request contains a valid User-Agent header.
+  * Only the HTTP `GET` method is implemented.
+  * Query parameters other than `hostname` and `myip` are not implemented.
+  * Only one hostname can be updated per request.
+  * It is not checked whether a request contains a valid User-Agent header.
 
 ## Contribute
 
