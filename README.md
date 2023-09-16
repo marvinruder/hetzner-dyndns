@@ -46,6 +46,7 @@ The following environment variables are supported, none of which are required:
 
 | Variable | Description |
 | --- | --- |
+| `COLOR` | Whether the log output should be colored. Set to `true` to enforce colored output, or `false` to enforce plain output. If not provided, the output will be colored if the output is a terminal. |
 | `ZONE` | The DNS zone to use. The zone must still be provided as the username in every client request, but only those with the configured zone will be forwarded to Hetzner DNS API. If not provided, requests with any zone will be accepted. |
 | `TOKEN` | The token to use for authentication against the Hetzner DNS API. The token must still be provided as the password in every client request, but only those with the configured token will be forwarded to Hetzner DNS API. If not provided, requests with any token will be accepted. |
 
