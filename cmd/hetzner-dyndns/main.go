@@ -11,6 +11,12 @@ import (
 )
 
 func main() {
+	if os.Getenv("COLOR") == "true" {
+		httplog.ForceConsoleColor()
+	}
+	if os.Getenv("COLOR") == "false" {
+		httplog.DisableConsoleColor()
+	}
 	http.Handle("/nic/update", httplog.LoggerWithConfig(httplog.LoggerConfig{
 		CaptureBody:    true,
 		Formatter:      httplog.FullFormatterWithRequestAndResponseHeadersAndBody,
