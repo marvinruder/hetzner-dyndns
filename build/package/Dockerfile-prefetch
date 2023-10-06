@@ -1,3 +1,3 @@
 FROM scratch
-COPY --from=golang:1.21.1-alpine /etc/os-release /etc/os-release-golang
+COPY --from=golang:1.21.2-alpine /etc/os-release /etc/os-release-golang
 COPY --from=eclipse-temurin:17.0.8_7-jre /etc/os-release /etc/os-release-java
