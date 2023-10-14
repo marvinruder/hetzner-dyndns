@@ -4,7 +4,7 @@ go 1.21
 
 require github.com/MadAppGang/httplog v1.3.0
 
-require github.com/THREATINT/go-net v1.2.34
+require github.com/THREATINT/go-net v1.2.35
 
 require go.acim.net/hcdns v0.0.4
 
