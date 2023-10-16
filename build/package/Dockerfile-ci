@@ -33,11 +33,11 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
     make -j -W dep ci
 
-FROM eclipse-temurin:21-jre as result
+FROM eclipse-temurin:21-jre-alpine as result
 
 # Download and extract Codacy coverage reporter
 RUN \
-  curl -Ls https://coverage.codacy.com/get.sh | sed 's/os_name=\$(uname)/os_name=$(uname)\nos_name_arch=$(uname -sm)/;s/if \[ "\$os_name" = "Linux" \] || \[ "\$os_name" = "Darwin" \]/if [ "$os_name_arch" = "Linux x86_64" ] || [ "$os_name_arch" = "Darwin x86_64" ]/' > /usr/local/bin/codacy-coverage && \
+  wget -qO - https://coverage.codacy.com/get.sh | sed 's/os_name=\$(uname)/os_name=$(uname)\nos_name_arch=$(uname -sm)/;s/if \[ "\$os_name" = "Linux" \] || \[ "\$os_name" = "Darwin" \]/if [ "$os_name_arch" = "Linux x86_64" ] || [ "$os_name_arch" = "Darwin x86_64" ]/' > /usr/local/bin/codacy-coverage && \
   chmod +x /usr/local/bin/codacy-coverage && \
   codacy-coverage download && \
   mkdir -p /extract
