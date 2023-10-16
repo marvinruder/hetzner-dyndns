@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
     make -j -W dep ci
 
-FROM eclipse-temurin:21-jre as result
+FROM eclipse-temurin:21-jre-alpine as result
 
 # Download and extract Codacy coverage reporter
 RUN \
