@@ -35,14 +35,12 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 
 FROM eclipse-temurin:21.0.2_13-jre-alpine as result
 
-# Install bash
+# Install bash and download and extract Codacy coverage reporter
 RUN --mount=type=cache,target=/var/cache/apk \
     mkdir -p /coverage /extract && \
     apk --update add \
-        bash
-
-# Download and extract Codacy coverage reporter
-RUN \
+        bash \
+    && \
   wget -qO - https://coverage.codacy.com/get.sh > /usr/local/bin/codacy-coverage && \
   chmod +x /usr/local/bin/codacy-coverage && \
   codacy-coverage download
