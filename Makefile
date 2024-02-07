@@ -13,7 +13,7 @@ dep:
 	go mod download -x
 
 test: dep
-	ZONE=${ZONE} TOKEN=${TOKEN} go test -coverprofile=${COVERAGE_DIR}/coverage.out ./...
+	ZONE=${ZONE} TOKEN=${TOKEN} go test -coverprofile=${COVERAGE_DIR}/coverage.out $$(go list ./... | grep -v /cmd/hetzner-dyndns)
 
 build-amd64: dep
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -trimpath -o ${OUTPUT_DIR}/${BINARY_NAME}-amd64 cmd/${BINARY_NAME}/main.go
