@@ -1,0 +1,16 @@
+name: "GitHub Actions"
+
+on: [push]
+
+jobs:
+  renovate_trigger:
+    name: Trigger Renovate Run
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - run: |
+          DEPENDENCY_DASHBOARD_ISSUE_NUMBER="$(gh issue list -R ${{ github.repository }} | grep "Dependency Dashboard" | awk '{print $1}')"
+          DEPENDENCY_DASHBOARD_BODY="$(gh issue view $DEPENDENCY_DASHBOARD_ISSUE_NUMBER -R ${{ github.repository }} --json body --jq .body | sed 's/- \[ \] <!-- manual job -->/- \[x\] <!-- manual job -->/')"
+          gh issue edit $DEPENDENCY_DASHBOARD_ISSUE_NUMBER -R ${{ github.repository }} -F <(echo "$DEPENDENCY_DASHBOARD_BODY")
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
