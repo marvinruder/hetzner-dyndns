@@ -6,7 +6,7 @@ jobs:
   renovate_trigger:
     name: Trigger Renovate Run
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/renovate-github-actions'
     steps:
       - run: |
           DEPENDENCY_DASHBOARD_ISSUE_NUMBER="$(gh issue list -R ${{ github.repository }} | grep "Dependency Dashboard" | awk '{print $1}')"
