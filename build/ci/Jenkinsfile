@@ -3,7 +3,7 @@ node('hetzner-dyndns-build') {
         'imagename=marvinruder/hetzner-dyndns',
         'FORCE_COLOR=true'
     ]) {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'), string(credentialsId: 'github_pat', variable: 'GH_TOKEN')]) {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
             // Use random job identifier and test port numbers to avoid collisions
             def JOB_ID = sh (script: "#!/bin/bash\nprintf \"%04d\" \$((1 + RANDOM % 8192))", returnStdout: true)
 
