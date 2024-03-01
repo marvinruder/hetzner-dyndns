@@ -1,99 +1,101 @@
 node('hetzner-dyndns-build') {
-    withEnv([
-        'imagename=marvinruder/hetzner-dyndns',
-        'FORCE_COLOR=true'
-    ]) {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-            // Use random job identifier and test port numbers to avoid collisions
-            def JOB_ID = sh (script: "#!/bin/bash\nprintf \"%04d\" \$((1 + RANDOM % 8192))", returnStdout: true)
+  withEnv([
+    'IMAGE_NAME=marvinruder/hetzner-dyndns',
+    'FORCE_COLOR=true'
+  ]) {
+    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+      // Use random job identifier to avoid collisions
+      def JOB_ID = sh (script: "#!/bin/bash\nprintf \"%04d\" \$((1 + RANDOM % 8192))", returnStdout: true)
+      def BUILD_DATE = sh (script: "#!/bin/bash\necho -n \$(date -u +'%Y-%m-%dT%H:%M:%SZ')", returnStdout: true)
 
-            try {
-                parallel(
-                    scm: {
-                        stage('Clone repository') {
-                            checkout scm
-                        }
-                    },
-                    docker_env: {
-                        stage('Start Docker environment') {
-                            // Log in to Docker Hub
-                            sh('echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin')
-
-                            // Create builder instance and prefetch Docker base images
-                            sh """
-                            docker builder create --name hetzner-dyndns --driver docker-container --bootstrap || :
-                            JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c '(curl -Ls https://raw.githubusercontent.com/$imagename/\$BRANCH_NAME/build/package/Dockerfile-prefetch | docker build -) &'
-                            """
-                        }
-                    }
-                )
-
-
-                stage ('Build and test Docker Image') {
-                    withCredentials([string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
-                        docker.build("$imagename:job$JOB_ID-ci", '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com -f build/package/Dockerfile-ci --force-rm .")
-                    }
-
-                    // Copy build artifacts to workspace
-                    sh """
-                    mkdir -p bin
-                    id=\$(docker create $imagename:job$JOB_ID-ci)
-                    docker cp \$id:/extract/. ./bin/.
-                    docker rm -v \$id
-                    """
-                }
-
-                parallel(
-                    codacy: {
-                        stage ('Publish coverage results to Codacy') {
-                            withCredentials([string(credentialsId: 'codacy-project-token-hetzner-dyndns', variable: 'CODACY_PROJECT_TOKEN')]) {
-                                // Publish coverage results by running a container from the test image
-                                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$imagename:job$JOB_ID-ci report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H'); docker rmi $imagename:job$JOB_ID-ci")
-                            }
-                        }
-                    },
-                    dockerhub: {
-                        stage ('Assemble and publish Docker Image') {
-                            // Identify image tags
-                            def tags = ""
-                            if (env.TAG_NAME) {
-                                // A version tag is present
-                                def VERSION = sh (script: "echo -n \$TAG_NAME | sed 's/^v//'", returnStdout: true)
-                                def MAJOR = sh (script: "#!/bin/bash\nif [[ \$TAG_NAME =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+\$ ]]; then echo -n \$TAG_NAME | sed -E 's/^v([0-9]+)\\.([0-9]+)\\.([0-9]+)\$/\\1/'; fi", returnStdout: true)
-                                def MINOR = sh (script: "#!/bin/bash\nif [[ \$TAG_NAME =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+\$ ]]; then echo -n \$TAG_NAME | sed -E 's/^v([0-9]+)\\.([0-9]+)\\.([0-9]+)\$/\\1.\\2/'; fi", returnStdout: true)
-
-                                // Use the tag explicitly
-                                tags += " -t $imagename:$VERSION"
-
-                                // Check for semver syntax
-                                if (MAJOR) {
-                                    // Use the major and minor version as additional tags
-                                    tags += " -t $imagename:$MINOR -t $imagename:$MAJOR -t $imagename:latest"
-                                }
-                            } else if (env.BRANCH_NAME == 'main') {
-                                // Images with tag `edge` are built from the main branch
-                                tags += " -t $imagename:edge"
-                            } else if (!(env.BRANCH_NAME).startsWith('renovate')) {
-                                // Images with tag `snapshot` are built from other branches, except when updating dependencies only
-                                tags += " -t $imagename:SNAPSHOT"
-                            }
-
-                            // If tags are present, build and push the image for both amd64 and arm64 architectures
-                            if (tags.length() > 0) {
-                                sh("docker buildx build --builder hetzner-dyndns -f build/package/Dockerfile --force-rm --push --platform=linux/amd64,linux/arm64 --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') $tags .")
-                            }
-                        }
-                    }
-                )
-            } finally {
-                stage ('Cleanup') {
-                    // Remove build artifacts
-                    sh """
-                    docker rmi $imagename:job$JOB_ID $imagename:job$JOB_ID-ci $imagename:job$JOB_ID-yarn || :
-                    rm -rf bin
-                    """
-                }
+      try {
+        parallel(
+          scm: {
+            stage('Clone repository') {
+              checkout scm
             }
+          },
+          docker_env: {
+            stage('Start Docker environment') {
+              // Log in to Docker Hub
+              sh('echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin')
+
+              // Create builder instance and prefetch/prebuild Docker images
+              sh """
+              JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c '(curl -Ls https://raw.githubusercontent.com/$IMAGE_NAME/\$BRANCH_NAME/build/package/Dockerfile | docker build --target=prefetch -) &'
+              docker builder create --name hetzner-dyndns --driver docker-container --bootstrap || :
+              JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c "(curl -Ls https://raw.githubusercontent.com/$IMAGE_NAME/\$BRANCH_NAME/build/package/Dockerfile | sed -n '/###/q;p' | docker buildx build --builder hetzner-dyndns --platform=linux/amd64,linux/arm64 --build-arg BUILD_DATE='$BUILD_DATE' --target=deploy -) &"
+              """
+            }
+          }
+        )
+
+
+        stage ('Build and test Docker Image') {
+          withCredentials([string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
+            docker.build("$IMAGE_NAME:job$JOB_ID-result", '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com -f build/package/Dockerfile --force-rm --target=result .")
+          }
+
+          // Copy build artifacts to workspace
+          sh """
+          mkdir -p bin
+          id=\$(docker create $IMAGE_NAME:job$JOB_ID-result)
+          docker cp \$id:/extract/. ./bin/.
+          docker rm -v \$id
+          """
         }
+
+        parallel(
+          codacy: {
+            stage ('Publish coverage results to Codacy') {
+              withCredentials([string(credentialsId: 'codacy-project-token-hetzner-dyndns', variable: 'CODACY_PROJECT_TOKEN')]) {
+                // Publish coverage results by running a container from the test image
+                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$IMAGE_NAME:job$JOB_ID-result report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H'); docker rmi $IMAGE_NAME:job$JOB_ID-result")
+              }
+            }
+          },
+          dockerhub: {
+            stage ('Assemble and publish Docker Image') {
+              // Identify image tags
+              def tags = ""
+              if (env.TAG_NAME) {
+                // A version tag is present
+                def VERSION = sh (script: "echo -n \$TAG_NAME | sed 's/^v//'", returnStdout: true)
+                def MAJOR = sh (script: "#!/bin/bash\nif [[ \$TAG_NAME =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+\$ ]]; then echo -n \$TAG_NAME | sed -E 's/^v([0-9]+)\\.([0-9]+)\\.([0-9]+)\$/\\1/'; fi", returnStdout: true)
+                def MINOR = sh (script: "#!/bin/bash\nif [[ \$TAG_NAME =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+\$ ]]; then echo -n \$TAG_NAME | sed -E 's/^v([0-9]+)\\.([0-9]+)\\.([0-9]+)\$/\\1.\\2/'; fi", returnStdout: true)
+
+                // Use the tag explicitly
+                tags += " -t $IMAGE_NAME:$VERSION"
+
+                // Check for semver syntax
+                if (MAJOR) {
+                  // Use the major and minor version as additional tags
+                  tags += " -t $IMAGE_NAME:$MINOR -t $IMAGE_NAME:$MAJOR -t $IMAGE_NAME:latest"
+                }
+              } else if (env.BRANCH_NAME == 'main') {
+                // Images with tag `edge` are built from the main branch
+                tags += " -t $IMAGE_NAME:edge"
+              } else if (!(env.BRANCH_NAME).startsWith('renovate')) {
+                // Images with tag `snapshot` are built from other branches, except when updating dependencies only
+                tags += " -t $IMAGE_NAME:SNAPSHOT"
+              }
+
+              // If tags are present, build and push the image for both amd64 and arm64 architectures
+              if (tags.length() > 0) {
+                sh("docker buildx build --builder hetzner-dyndns -f build/package/Dockerfile --platform=linux/amd64,linux/arm64 --build-arg BUILD_DATE='$BUILD_DATE' --force-rm --target=deploy --push $tags .")
+              }
+            }
+          }
+        )
+      } finally {
+        stage ('Cleanup') {
+          // Remove build artifacts
+          sh """
+          docker rmi $IMAGE_NAME:job$JOB_ID-result || :
+          rm -rf bin
+          """
+        }
+      }
     }
+  }
 }
