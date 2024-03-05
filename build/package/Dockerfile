@@ -1,10 +1,10 @@
 # Lists all images to be prefetched by the regular Docker builder
 FROM scratch as prefetch
-COPY --from=golang:1.22.0-alpine /etc/os-release /etc/os-release-golang
+COPY --from=golang:1.22.1-alpine /etc/os-release /etc/os-release-golang
 COPY --from=eclipse-temurin:21.0.2_13-jre-alpine /etc/os-release /etc/os-release-java
 
 
-FROM golang:1.22.0-alpine as run
+FROM golang:1.22.1-alpine as run
 
 WORKDIR /src
 
