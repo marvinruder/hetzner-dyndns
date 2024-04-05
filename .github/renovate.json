@@ -10,5 +10,11 @@
   "assigneesFromCodeOwners": true,
   "updateLockFiles": true,
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
-  "rangeStrategy": "pin"
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "matchDatasources": ["golang-version"],
+      "rangeStrategy": "bump"
+    }
+  ]
 }
