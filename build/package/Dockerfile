@@ -1,7 +1,7 @@
 # Lists all images to be prefetched by the regular Docker builder
 FROM scratch as prefetch
 COPY --from=golang:1.22.2-alpine /etc/os-release /etc/os-release-golang
-COPY --from=eclipse-temurin:21.0.2_13-jre-alpine /etc/os-release /etc/os-release-java
+COPY --from=eclipse-temurin:21.0.3_9-jre-alpine /etc/os-release /etc/os-release-java
 
 
 FROM golang:1.22.2-alpine as run
@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
     make -j -W dep ci
 
-FROM eclipse-temurin:21.0.2_13-jre-alpine as result
+FROM eclipse-temurin:21.0.3_9-jre-alpine as result
 
 # Install bash and download and extract Codacy coverage reporter
 RUN --mount=type=cache,target=/var/cache/apk \
