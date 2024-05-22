@@ -1,7 +1,7 @@
 #!make
 BINARY_NAME=hetzner-dyndns
-OUTPUT_DIR=/extract
-COVERAGE_DIR=/coverage
+OUTPUT_DIR=bin
+COVERAGE_DIR=coverage
 
 -include .env
 
@@ -13,6 +13,7 @@ dep:
 	go mod download -x
 
 test: dep
+	mkdir -p ${COVERAGE_DIR}
 	ZONE=${ZONE} TOKEN=${TOKEN} go test -coverprofile=${COVERAGE_DIR}/coverage.out $$(go list ./... | grep -v /cmd/hetzner-dyndns)
 
 build-amd64: dep

@@ -3,7 +3,7 @@ node('hetzner-dyndns-build') {
     'IMAGE_NAME=marvinruder/hetzner-dyndns',
     'FORCE_COLOR=true'
   ]) {
-    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'), string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
       // Use random job identifier to avoid collisions
       def JOB_ID = sh (script: "#!/bin/bash\nprintf \"%04d\" \$((1 + RANDOM % 8192))", returnStdout: true)
       def BUILD_DATE = sh (script: "#!/bin/bash\necho -n \$(date -u +'%Y-%m-%dT%H:%M:%SZ')", returnStdout: true)
@@ -21,28 +21,14 @@ node('hetzner-dyndns-build') {
               sh('echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin')
 
               // Create builder instance and prefetch/prebuild Docker images
-              sh """
-              JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c '(curl -Ls https://raw.githubusercontent.com/$IMAGE_NAME/\$BRANCH_NAME/build/package/Dockerfile | docker build --target=prefetch -) &'
-              docker builder create --name hetzner-dyndns --driver docker-container --bootstrap || :
-              JENKINS_NODE_COOKIE=DONT_KILL_ME /bin/sh -c "(curl -Ls https://raw.githubusercontent.com/$IMAGE_NAME/\$BRANCH_NAME/build/package/Dockerfile | sed -n '/###/q;p' | docker buildx build --builder hetzner-dyndns --platform=linux/amd64,linux/arm64 --build-arg BUILD_DATE='$BUILD_DATE' --target=deploy -) &"
-              """
+              sh("docker builder create --name hetzner-dyndns --node hetzner-dyndns --driver docker-container --bootstrap")
             }
           }
         )
 
 
         stage ('Build and test Docker Image') {
-          withCredentials([string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
-            docker.build("$IMAGE_NAME:job$JOB_ID-result", '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com -f build/package/Dockerfile --force-rm --target=result .")
-          }
-
-          // Copy build artifacts to workspace
-          sh """
-          mkdir -p bin
-          id=\$(docker create $IMAGE_NAME:job$JOB_ID-result)
-          docker cp \$id:/extract/. ./bin/.
-          docker rm -v \$id
-          """
+          sh("docker buildx build --builder hetzner-dyndns " + '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com --build-arg BUILD_DATE='$BUILD_DATE' -f build/package/Dockerfile --target=result -t $IMAGE_NAME:job$JOB_ID --load .")
         }
 
         parallel(
@@ -50,7 +36,7 @@ node('hetzner-dyndns-build') {
             stage ('Publish coverage results to Codacy') {
               withCredentials([string(credentialsId: 'codacy-project-token-hetzner-dyndns', variable: 'CODACY_PROJECT_TOKEN')]) {
                 // Publish coverage results by running a container from the test image
-                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$IMAGE_NAME:job$JOB_ID-result report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H'); docker rmi $IMAGE_NAME:job$JOB_ID-result")
+                sh('docker run --rm -e CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN ' + "$IMAGE_NAME:job$JOB_ID report --force-coverage-parser go -r /coverage/coverage.out --commit-uuid \$(git log -n 1 --pretty=format:'%H')")
               }
             }
           },
@@ -82,7 +68,7 @@ node('hetzner-dyndns-build') {
 
               // If tags are present, build and push the image for both amd64 and arm64 architectures
               if (tags.length() > 0) {
-                sh("docker buildx build --builder hetzner-dyndns -f build/package/Dockerfile --platform=linux/amd64,linux/arm64 --build-arg BUILD_DATE='$BUILD_DATE' --force-rm --target=deploy --push $tags .")
+                sh("docker buildx build --builder hetzner-dyndns " + '--build-arg TOKEN=$TOKEN' + " --build-arg ZONE=$JOB_ID-example.com --build-arg BUILD_DATE='$BUILD_DATE' -f build/package/Dockerfile --platform=linux/amd64,linux/arm64 --target=deploy --push $tags .")
               }
             }
           }
@@ -90,9 +76,8 @@ node('hetzner-dyndns-build') {
       } finally {
         stage ('Cleanup') {
           // Remove build artifacts
-          sh """
-          docker rmi $IMAGE_NAME:job$JOB_ID-result || :
-          rm -rf bin
+          sh """#!/bin/bash
+          docker rmi $IMAGE_NAME:job$JOB_ID || :
           """
         }
       }
