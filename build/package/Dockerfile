@@ -49,6 +49,7 @@ FROM alpine:3.20.0 as deploy
 ARG TARGETARCH
 
 # Set OCI image labels
+ARG BUILD_DATE
 LABEL \
   org.opencontainers.image.title="Hetzner DynDNS" \
   org.opencontainers.image.authors="Marvin A. Ruder <hetzner-dyndns@mruder.dev>" \
