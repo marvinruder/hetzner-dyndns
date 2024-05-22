@@ -58,7 +58,7 @@ COPY --from=run /extract/. /extract/.
 ENTRYPOINT [ "codacy-coverage" ]
 
 
-FROM alpine:3.19.1 as deploy
+FROM alpine:3.20.0 as deploy
 ARG TARGETARCH
 
 # Set OCI image labels
