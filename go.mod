@@ -1,6 +1,6 @@
 module github.com/marvinruder/hetzner-dyndns
 
-go 1.22.6
+go 1.23.0
 
 require github.com/MadAppGang/httplog v1.3.0
 
