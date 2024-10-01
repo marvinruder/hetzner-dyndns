@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.23.1-alpine as ci
+FROM --platform=$BUILDPLATFORM golang:1.23.1-alpine AS ci
 
 WORKDIR /workdir
 
@@ -28,7 +28,7 @@ RUN \
     --mount=type=bind,source=Makefile,target=Makefile \
     make -j -W dep ci
 
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21.0.4_7-jre-alpine as result
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21.0.4_7-jre-alpine AS result
 
 # Install bash and download and extract Codacy coverage reporter
 RUN \
@@ -45,7 +45,7 @@ COPY --from=ci /workdir/coverage/. .
 ENTRYPOINT [ "codacy-coverage" ]
 
 
-FROM alpine:3.20.3 as deploy
+FROM alpine:3.20.3 AS deploy
 ARG TARGETARCH
 
 # Set OCI image labels
