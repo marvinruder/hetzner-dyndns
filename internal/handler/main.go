@@ -3,15 +3,15 @@ package handler
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
-	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"strings"
 	"time"
 
-	gonet "github.com/THREATINT/go-net"
+	"github.com/marvinruder/hetzner-dyndns/internal/logger"
 	"go.acim.net/hcdns"
+	"golang.org/x/net/idna"
 )
 
 type DynDnsErrorCode string
@@ -69,25 +69,25 @@ func (handler DynDnsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 	// Check for Basic authorization header
 	if !strings.HasPrefix(r.Header.Get("Authorization"), "Basic ") {
-		fmt.Println("Missing Basic authorization header")
+		logger.Error("Missing Basic authorization header")
 		return &DynDnsError{Code: BadAuth}
 	}
 
 	// Decode username (zone) and password (token)
 	credentials, err := base64.StdEncoding.DecodeString((strings.Split(r.Header.Get("Authorization"), " ")[1]))
 	if err != nil || strings.Count(string(credentials), ":") != 1 {
-		fmt.Println("Unable to decode Basic authorization header")
+		logger.Error("Unable to decode Basic authorization header")
 		return &DynDnsError{Code: BadAuth}
 	}
 	zone, token := string(credentials[:strings.IndexByte(string(credentials), ':')]), string(credentials[strings.IndexByte(string(credentials), ':')+1:])
 	if os.Getenv("ZONE") != "" && zone != os.Getenv("ZONE") {
 		// deepcode ignore ClearTextLogging: zone is not a secret
-		fmt.Println("Zone " + zone + " not configured")
+		logger.Error("Zone " + zone + " not configured")
 		return &DynDnsError{Code: BadAgent}
 	}
 
 	if os.Getenv("TOKEN") != "" && token != os.Getenv("TOKEN") {
-		fmt.Println("Wrong token provided")
+		logger.Error("Wrong token provided")
 		return &DynDnsError{Code: BadAuth}
 	}
 
@@ -96,39 +96,49 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 
 	hcdnsZone, err := client.ZoneByName(ctx, zone)
 	if err != nil {
-		fmt.Println("Error getting zone: " + err.Error())
+		logger.Error("Error getting zone: " + err.Error())
 		return &DynDnsError{Code: NoHost}
 	}
 	hcdnsRecords, err := hcdnsZone.Records(ctx)
 	if err != nil {
-		fmt.Println("Error getting records: " + err.Error())
+		logger.Error("Error getting records: " + err.Error())
 		return &DynDnsError{Code: DNSErr}
 	}
-	fmt.Println("Found zone " + hcdnsZone.Name)
+	logger.Debug("Found zone " + hcdnsZone.Name)
 
-	// Check for hostname and IP parameters
 	hostname, ips := r.URL.Query().Get("hostname"), strings.Split(r.URL.Query().Get("myip"), ",")
-	ipv4, ipv6 := "", ""
-	for _, s := range ips {
-		ip := net.ParseIP(s)
-		if ip != nil {
-			if gonet.IsIPv4(ip) {
-				ipv4 = ip.String()
-			}
-			if gonet.IsIPv6(ip) {
-				ipv6 = ip.String()
-			}
-		}
-	}
-	if gonet.IsFQDN(hostname) == false {
-		fmt.Println("Provided Hostname is not a FQDN")
+
+	// Check hostname parameter
+	_, err = idna.Lookup.ToASCII(hostname)
+	if err != nil || strings.Count(hostname, ".") < 2 {
+		logger.Error("Provided Hostname is not a FQDN")
 		return &DynDnsError{Code: NotFQDN}
 	}
-	if !strings.HasSuffix(hostname, zone) || (ipv4 == "" && ipv6 == "") {
-		fmt.Println("Missing or wrong hostname or IP parameter")
+	if !strings.HasSuffix(hostname, zone) {
+		logger.Error("Hostname is not in zone")
+		return &DynDnsError{Code: NoHost}
+	}
+	logger.Debug("Received valid request for hostname " + hostname)
+
+	// Check IP parameter
+	ipv4, ipv6 := "", ""
+	for _, s := range ips {
+		ip, err := netip.ParseAddr(s)
+		if err != nil {
+			logger.Error("Error parsing IP: " + err.Error())
+			return &DynDnsError{Code: BadAgent}
+		}
+		if ip.Is4() {
+			ipv4 = ip.String()
+		}
+		if ip.Is6() {
+			ipv6 = ip.String()
+		}
+	}
+	if ipv4 == "" && ipv6 == "" {
+		logger.Error("Missing IP parameter")
 		return &DynDnsError{Code: BadAgent}
 	}
-	fmt.Println("Received valid request for hostname " + hostname + ":")
 
 	ipv4result, ipv6result := "", ""
 	recordName := strings.TrimSuffix(hostname, "."+zone)
@@ -137,13 +147,13 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 		if record.Name == recordName {
 			if record.Type == hcdns.A && ipv4 != "" {
 				if record.Value == ipv4 {
-					fmt.Println("\tIPv4 already up to date")
+					logger.Warn("IPv4 already up to date")
 					ipv4result = "nochg"
 				} else {
-					fmt.Println("\tUpdating IPv4 to " + ipv4 + " (was " + record.Value + ")")
+					logger.Info("Updating IPv4 to " + ipv4 + " (was " + record.Value + ")")
 					err = record.UpdateValueAndTTL(ctx, ipv4, 60*time.Second)
 					if err != nil {
-						fmt.Println("Error updating record: " + err.Error())
+						logger.Error("Error updating record: " + err.Error())
 						return &DynDnsError{Code: DNSErr}
 					}
 					ipv4result = "good"
@@ -151,13 +161,13 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 			}
 			if record.Type == hcdns.AAAA && ipv6 != "" {
 				if record.Value == ipv6 {
-					fmt.Println("\tIPv6 already up to date")
+					logger.Warn("IPv6 already up to date")
 					ipv6result = "nochg"
 				} else {
-					fmt.Println("\tUpdating IPv6 to " + ipv6 + " (was " + record.Value + ")")
+					logger.Info("Updating IPv6 to " + ipv6 + " (was " + record.Value + ")")
 					err = record.UpdateValueAndTTL(ctx, ipv6, 60*time.Second)
 					if err != nil {
-						fmt.Println("Error updating record: " + err.Error())
+						logger.Error("Error updating record: " + err.Error())
 						return &DynDnsError{Code: DNSErr}
 					}
 					ipv6result = "good"
@@ -166,19 +176,19 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	if ipv4result == "" && ipv4 != "" {
-		fmt.Println("\tCreating new IPv4 record " + ipv4)
+		logger.Info("Creating new IPv4 record " + ipv4)
 		_, err = hcdnsZone.CreateRecordWithTTL(ctx, hcdns.A, recordName, ipv4, 60*time.Second)
 		if err != nil {
-			fmt.Println("Error creating record: " + err.Error())
+			logger.Error("Error creating record: " + err.Error())
 			return &DynDnsError{Code: DNSErr}
 		}
 		ipv4result = "good"
 	}
 	if ipv6result == "" && ipv6 != "" {
-		fmt.Println("\tCreating new IPv6 record " + ipv6)
+		logger.Info("Creating new IPv6 record " + ipv6)
 		_, err = hcdnsZone.CreateRecordWithTTL(ctx, hcdns.AAAA, recordName, ipv6, 60*time.Second)
 		if err != nil {
-			fmt.Println("Error creating record: " + err.Error())
+			logger.Error("Error creating record: " + err.Error())
 			return &DynDnsError{Code: DNSErr}
 		}
 		ipv6result = "good"

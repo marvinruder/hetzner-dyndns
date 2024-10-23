@@ -3,7 +3,7 @@ FROM --platform=$BUILDPLATFORM golang:1.23.2-alpine AS ci
 WORKDIR /workdir
 
 # Install any dependencies that are needed to build your application.
-RUN apk add --no-cache make upx
+RUN apk add --no-cache make
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage bind mounts to go.sum, go.mod and Makefile to avoid having to copy

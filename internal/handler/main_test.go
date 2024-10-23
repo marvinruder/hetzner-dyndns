@@ -117,7 +117,7 @@ func TestDynDnsHandler(t *testing.T) {
 			authHeader:      authHeader,
 			urlParamString:  "?hostname=dyndns.example.org",
 			statusCode:      http.StatusBadRequest,
-			dynDnsErrorCode: BadAgent,
+			dynDnsErrorCode: NoHost,
 		},
 		{
 			name:            "No IP address",
