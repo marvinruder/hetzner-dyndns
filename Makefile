@@ -14,15 +14,13 @@ dep:
 
 test: dep
 	mkdir -p ${COVERAGE_DIR}
-	ZONE=${ZONE} TOKEN=${TOKEN} go test -coverprofile=${COVERAGE_DIR}/coverage.out $$(go list ./... | grep -v /cmd/hetzner-dyndns)
+	ZONE=${ZONE} TOKEN=${TOKEN} go test -coverprofile=${COVERAGE_DIR}/coverage.out $$(go list ./... | grep -v '/cmd/hetzner-dyndns\|/internal/logger')
 
 build-amd64: dep
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -trimpath -o ${OUTPUT_DIR}/${BINARY_NAME}-amd64 cmd/${BINARY_NAME}/main.go
-	upx -q --no-progress --lzma ${OUTPUT_DIR}/${BINARY_NAME}-amd64 | tail -n 3 | head -n 1
 
 build-arm64: dep
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -trimpath -o ${OUTPUT_DIR}/${BINARY_NAME}-arm64 cmd/${BINARY_NAME}/main.go
-	upx -q --no-progress --lzma ${OUTPUT_DIR}/${BINARY_NAME}-arm64 | tail -n 3 | head -n 1
 
 build: build-amd64 build-arm64
 
