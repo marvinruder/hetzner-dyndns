@@ -38,7 +38,7 @@ func main() {
 	if os.Getenv("ZONE") == "" {
 		logger.Info("Zone not configured, will accept requests for all zones")
 	} else {
-		logger.Info("Will accept requests for zone " + os.Getenv("ZONE"))
+		logger.Info("Will accept requests for configured zone only", "zone", os.Getenv("ZONE"))
 	}
 	if os.Getenv("TOKEN") == "" {
 		logger.Info("Token not configured, will accept requests with any token")
@@ -46,12 +46,12 @@ func main() {
 		logger.Info("Will accept requests with correct token only")
 	}
 
-	logger.Info("Starting server on port 8245")
+	logger.Info("Starting server", "port", 8245)
 	err := http.ListenAndServe(":8245", nil)
 	if errors.Is(err, http.ErrServerClosed) {
 		logger.Info("Server closed")
 	} else if err != nil {
-		logger.Error("Error starting server: %s", err)
+		logger.Error("Error starting server", "error", err)
 		os.Exit(1)
 	}
 }
