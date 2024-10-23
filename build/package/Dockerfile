@@ -58,7 +58,7 @@ LABEL \
   org.opencontainers.image.source="https://github.com/marvinruder/hetzner-dyndns" \
   org.opencontainers.image.vendor="Marvin A. Ruder" \
   org.opencontainers.image.licenses="MIT" \
-  org.opencontainers.image.version="0.2.1" \
+  org.opencontainers.image.version="0.2.2" \
   org.opencontainers.image.created=$BUILD_DATE
 
 # Create a non-privileged user that the app will run under.
