@@ -27,4 +27,4 @@ build: build-amd64 build-arm64
 ci: test build
 
 run: dep
-	ZONE=${ZONE} TOKEN=${TOKEN} go run cmd/${BINARY_NAME}/main.go
+	ZONE=${ZONE} TOKEN=${TOKEN} LOG_LEVEL=${LOG_LEVEL} go run cmd/${BINARY_NAME}/main.go
