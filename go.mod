@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/MadAppGang/httplog v1.3.0
 	go.acim.net/hcdns v0.0.4
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 )
 
 require (
