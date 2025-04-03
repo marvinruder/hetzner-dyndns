@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.24.1-alpine AS ci
+FROM --platform=$BUILDPLATFORM golang:1.24.2-alpine AS ci
 
 WORKDIR /workdir
 
