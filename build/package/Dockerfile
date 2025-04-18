@@ -61,6 +61,8 @@ LABEL \
   org.opencontainers.image.version="0.2.3" \
   org.opencontainers.image.created=$BUILD_DATE
 
+HEALTHCHECK CMD wget -qO /dev/null http://localhost:8245/health || exit 1
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 RUN adduser \
