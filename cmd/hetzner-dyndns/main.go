@@ -34,6 +34,10 @@ func main() {
 		ProxyHandler: httplog.NewProxy(),
 		RouterName:   "Other Request",
 	})(http.NotFoundHandler()))
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
 	if os.Getenv("ZONE") == "" {
 		logger.Info("Zone not configured, will accept requests for all zones")
