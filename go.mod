@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/MadAppGang/httplog v1.3.0
 	go.acim.net/hcdns v0.0.4
-	golang.org/x/net v0.40.0
+	golang.org/x/net v0.41.0
 )
 
 require (
@@ -14,5 +14,5 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 )
