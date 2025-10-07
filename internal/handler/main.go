@@ -153,7 +153,6 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	for _, rrSet := range hcloudRRSets {
-		logger.Debug("Found record", "name", rrSet.Name, "type", rrSet.Type, "records", rrSet.Records)
 		if rrSet.Type == hcloud.ZoneRRSetTypeA && ipv4 != "" {
 			if rrSet.Records[0].Value == ipv4 {
 				logger.Warn("IPv4 already up to date", "ip", ipv4, "hostname", hostname)
