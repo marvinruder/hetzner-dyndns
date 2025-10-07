@@ -7,10 +7,9 @@ import (
 	"net/netip"
 	"os"
 	"strings"
-	"time"
 
+	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 	"github.com/marvinruder/hetzner-dyndns/internal/logger"
-	"go.acim.net/hcdns"
 	"golang.org/x/net/idna"
 )
 
@@ -91,20 +90,15 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 		return &DynDnsError{Code: BadAuth}
 	}
 
-	client := hcdns.NewClient(token)
+	client := hcloud.NewClient(hcloud.WithToken(token))
 	ctx := context.Background()
 
-	hcdnsZone, err := client.ZoneByName(ctx, zone)
-	if err != nil {
+	hcloudZone, _, err := client.Zone.GetByName(ctx, zone)
+	if err != nil || hcloudZone == nil {
 		logger.Error("Error getting zone", "err", err)
 		return &DynDnsError{Code: NoHost}
 	}
-	hcdnsRecords, err := hcdnsZone.Records(ctx)
-	if err != nil {
-		logger.Error("Error getting records", "err", err)
-		return &DynDnsError{Code: DNSErr}
-	}
-	logger.Debug("Found zone", "zone", hcdnsZone.Name)
+	logger.Debug("Found zone", "zone", hcloudZone.Name)
 
 	hostname, ips := r.URL.Query().Get("hostname"), strings.Split(r.URL.Query().Get("myip"), ",")
 
@@ -149,41 +143,61 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 	ipv4result, ipv6result := "", ""
 	recordName := strings.TrimSuffix(hostname, "."+zone)
 
-	for _, record := range hcdnsRecords {
-		if record.Name == recordName {
-			if record.Type == hcdns.A && ipv4 != "" {
-				if record.Value == ipv4 {
-					logger.Warn("IPv4 already up to date", "ip", ipv4, "hostname", hostname)
-					ipv4result = "nochg"
-				} else {
-					logger.Info("Updating IPv4", "was", record.Value, "ip", ipv4, "hostname", hostname)
-					err = record.UpdateValueAndTTL(ctx, ipv4, 60*time.Second)
-					if err != nil {
-						logger.Error("Error updating IPv4 record", "ip", ipv4, "hostname", hostname, "err", err)
-						return &DynDnsError{Code: DNSErr}
-					}
-					ipv4result = "good"
+	hcloudRRSets, _, err := client.Zone.ListRRSets(ctx, hcloudZone, hcloud.ZoneRRSetListOpts{
+		Name: recordName,
+		Type: []hcloud.ZoneRRSetType{hcloud.ZoneRRSetTypeA, hcloud.ZoneRRSetTypeAAAA}},
+	)
+	if err != nil {
+		logger.Error("Error getting records", "err", err)
+		return &DynDnsError{Code: DNSErr}
+	}
+
+	for _, rrSet := range hcloudRRSets {
+		if rrSet.Type == hcloud.ZoneRRSetTypeA && ipv4 != "" {
+			if rrSet.Records[0].Value == ipv4 {
+				logger.Warn("IPv4 already up to date", "ip", ipv4, "hostname", hostname)
+				ipv4result = "nochg"
+			} else {
+				logger.Info("Updating IPv4", "was", rrSet.Records[0].Value, "ip", ipv4, "hostname", hostname)
+				setRecordsOpts := hcloud.ZoneRRSetSetRecordsOpts{Records: rrSet.Records}
+				setRecordsOpts.Records[0].Value = ipv4
+				_, _, err = client.Zone.SetRRSetRecords(ctx, rrSet, setRecordsOpts)
+				if err != nil {
+					logger.Error("Error updating IPv4 record", "ip", ipv4, "hostname", hostname, "err", err)
+					return &DynDnsError{Code: DNSErr}
 				}
+				ipv4result = "good"
 			}
-			if record.Type == hcdns.AAAA && ipv6 != "" {
-				if record.Value == ipv6 {
-					logger.Warn("IPv6 already up to date", "ip", ipv6, "hostname", hostname)
-					ipv6result = "nochg"
-				} else {
-					logger.Info("Updating IPv6", "was", record.Value, "ip", ipv6, "hostname", hostname)
-					err = record.UpdateValueAndTTL(ctx, ipv6, 60*time.Second)
-					if err != nil {
-						logger.Error("Error updating IPv6 record", "ip", ipv6, "hostname", hostname, "err", err)
-						return &DynDnsError{Code: DNSErr}
-					}
-					ipv6result = "good"
+		}
+		if rrSet.Type == hcloud.ZoneRRSetTypeAAAA && ipv6 != "" {
+			if rrSet.Records[0].Value == ipv6 {
+				logger.Warn("IPv6 already up to date", "ip", ipv6, "hostname", hostname)
+				ipv6result = "nochg"
+			} else {
+				logger.Info("Updating IPv6", "was", rrSet.Records[0].Value, "ip", ipv6, "hostname", hostname)
+				setRecordsOpts := hcloud.ZoneRRSetSetRecordsOpts{Records: rrSet.Records}
+				setRecordsOpts.Records[0].Value = ipv6
+				_, _, err = client.Zone.SetRRSetRecords(ctx, rrSet, setRecordsOpts)
+				if err != nil {
+					logger.Error("Error updating IPv6 record", "ip", ipv6, "hostname", hostname, "err", err)
+					return &DynDnsError{Code: DNSErr}
 				}
+				ipv6result = "good"
 			}
 		}
 	}
+
+	TTL := 60
+
 	if ipv4result == "" && ipv4 != "" {
 		logger.Info("Creating new IPv4 record", "ip", ipv4, "hostname", hostname)
-		_, err = hcdnsZone.CreateRecordWithTTL(ctx, hcdns.A, recordName, ipv4, 60*time.Second)
+		createRecordOpts := hcloud.ZoneRRSetCreateOpts{
+			Name:    recordName,
+			Type:    hcloud.ZoneRRSetTypeA,
+			TTL:     &TTL,
+			Records: []hcloud.ZoneRRSetRecord{{Value: ipv4}},
+		}
+		_, _, err = client.Zone.CreateRRSet(ctx, hcloudZone, createRecordOpts)
 		if err != nil {
 			logger.Error("Error creating IPv4 record", "ip", ipv4, "hostname", hostname, "err", err)
 			return &DynDnsError{Code: DNSErr}
@@ -192,7 +206,13 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 	}
 	if ipv6result == "" && ipv6 != "" {
 		logger.Info("Creating new IPv6 record", "ip", ipv6, "hostname", hostname)
-		_, err = hcdnsZone.CreateRecordWithTTL(ctx, hcdns.AAAA, recordName, ipv6, 60*time.Second)
+		createRecordOpts := hcloud.ZoneRRSetCreateOpts{
+			Name:    recordName,
+			Type:    hcloud.ZoneRRSetTypeAAAA,
+			TTL:     &TTL,
+			Records: []hcloud.ZoneRRSetRecord{{Value: ipv6}},
+		}
+		_, _, err = client.Zone.CreateRRSet(ctx, hcloudZone, createRecordOpts)
 		if err != nil {
 			logger.Error("Error creating IPv6 record", "ip", ipv6, "hostname", hostname, "err", err)
 			return &DynDnsError{Code: DNSErr}

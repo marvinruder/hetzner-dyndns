@@ -3,7 +3,7 @@ node('hetzner-dyndns-build') {
     'IMAGE_NAME=marvinruder/hetzner-dyndns',
     'FORCE_COLOR=true'
   ]) {
-    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'), string(credentialsId: 'hetzner-dns-token', variable: 'TOKEN')]) {
+    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'), string(credentialsId: 'hcloud', variable: 'TOKEN')]) {
       // Use random job identifier to avoid collisions
       def JOB_ID = sh (script: "#!/bin/bash\nprintf \"%04d\" \$((1 + RANDOM % 8192))", returnStdout: true)
       def BUILD_DATE = sh (script: "#!/bin/bash\necho -n \$(date -u +'%Y-%m-%dT%H:%M:%SZ')", returnStdout: true)

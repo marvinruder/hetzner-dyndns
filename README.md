@@ -14,8 +14,8 @@ A proxy server for updating DNS records on Hetzner DNS using the DynDNS protocol
 
 ### Prerequisites
 
-*   A DNS zone managed by Hetzner DNS
-*   An API token for the Hetzner DNS API (obtainable from the [Hetzner DNS Console](https://dns.hetzner.com/settings/api-token))
+*   A DNS zone managed in the Hetzner Console
+*   An API token for the Hetzner Cloud API (obtainable from the [Hetzner Console](https://console.hetzner.com))
 *   A DynDNS client (e.g. a router) that supports the DynDNS protocol
 *   A server with a static IP address that is reachable from the internet to run the proxy server on
 
@@ -47,8 +47,8 @@ The following environment variables are supported, none of which are required:
 | Variable | Description |
 | --- | --- |
 | `COLOR` | Whether the log output should be colored. Set to `true` to enforce colored output, or `false` to enforce plain output. If not provided, the output will be colored if the output is a terminal. |
-| `ZONE` | The DNS zone to use. The zone must still be provided as the username in every client request, but only those with the configured zone will be forwarded to Hetzner DNS API. If not provided, requests with any zone will be accepted. |
-| `TOKEN` | The token to use for authentication against the Hetzner DNS API. The token must still be provided as the password in every client request, but only those with the configured token will be forwarded to Hetzner DNS API. If not provided, requests with any token will be accepted. |
+| `ZONE` | The DNS zone to use. The zone must still be provided as the username in every client request, but only those with the configured zone will be forwarded to the Hetzner Cloud API. If not provided, requests with any zone will be accepted. |
+| `TOKEN` | The token to use for authentication against the Hetzner Cloud API. The token must still be provided as the password in every client request, but only those with the configured token will be forwarded to Hetzner Cloud API. If not provided, requests with any token will be accepted. |
 | `LOG_LEVEL` | The minimum level of messages to log. Messages with lower levels will be discarded. Possible values are `ERROR`, `WARN`, `INFO` (the default) and `DEBUG`. |
 
 ### Configure a client
@@ -73,6 +73,7 @@ A detailed description of the DynDNS protocol is published by Oracle [here](http
 *   Only the HTTP `GET` method is implemented.
 *   Query parameters other than `hostname` and `myip` are not implemented.
 *   Only one hostname can be updated per request.
+*   Only one IPv4 and one IPv6 address can be present for each hostname. If a resource record set contains multiple records, only one is updated. Do not add more than one record to a resource record set to avoid unexpected behavior.
 *   It is not checked whether a request contains a valid User-Agent header.
 
 ## Contribute
