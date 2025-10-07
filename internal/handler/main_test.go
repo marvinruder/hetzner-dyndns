@@ -9,14 +9,14 @@ import (
 	"os"
 	"testing"
 
-	"go.acim.net/hcdns"
+	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 )
 
 func setupSuite(t *testing.T, token string, zone string) func(t *testing.T) {
-	client := hcdns.NewClient(token)
+	client := hcloud.NewClient(hcloud.WithToken(token))
 	ctx := context.Background()
 	fmt.Println("Creating test zone")
-	hcdnsZone, err := client.CreateZone(ctx, zone)
+	hcloudZoneCreateResult, _, err := client.Zone.Create(ctx, hcloud.ZoneCreateOpts{Name: zone, Mode: hcloud.ZoneModePrimary})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func setupSuite(t *testing.T, token string, zone string) func(t *testing.T) {
 
 	return func(t *testing.T) {
 		fmt.Println("Deleting test zone")
-		hcdnsZone.Delete(ctx)
+		client.Zone.Delete(ctx, hcloudZoneCreateResult.Zone)
 		if err != nil {
 			t.Fatal(err)
 		}
