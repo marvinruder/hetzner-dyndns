@@ -28,7 +28,7 @@ RUN \
     --mount=type=bind,source=Makefile,target=Makefile \
     make -j -W dep ci
 
-FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jre-alpine AS result
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25.0.1_8-jre-alpine AS result
 
 # Install bash and download and extract Codacy coverage reporter
 RUN \
