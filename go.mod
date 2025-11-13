@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/MadAppGang/httplog v1.3.0
-	github.com/hetznercloud/hcloud-go/v2 v2.29.0
+	github.com/hetznercloud/hcloud-go/v2 v2.30.0
 	golang.org/x/net v0.46.0
 )
 
