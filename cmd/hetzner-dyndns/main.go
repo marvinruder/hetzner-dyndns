@@ -8,6 +8,8 @@ import (
 	"github.com/MadAppGang/httplog"
 	"github.com/marvinruder/hetzner-dyndns/internal/handler"
 	"github.com/marvinruder/hetzner-dyndns/internal/logger"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 func main() {
@@ -51,7 +53,13 @@ func main() {
 	}
 
 	logger.Info("Starting server", "port", 8245)
-	err := http.ListenAndServe(":8245", nil)
+
+	h2Server := &http.Server{
+		Addr:    ":8245",
+		Handler: h2c.NewHandler(http.DefaultServeMux, &http2.Server{}),
+	}
+	err := h2Server.ListenAndServe()
+
 	if errors.Is(err, http.ErrServerClosed) {
 		logger.Info("Server closed")
 	} else if err != nil {
