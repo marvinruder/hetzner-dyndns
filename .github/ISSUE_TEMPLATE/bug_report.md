@@ -24,9 +24,9 @@ If applicable, add screenshots and log snippets to help explain your problem.
 
 **Environment (please complete the following information):**
 
-- Version: [e.g. 0.4.0]
-- OS: [e.g. Fedora Server 42]
-- Client: [e.g. curl 8.1.2]
+- Version: [e.g. 0.5.0]
+- OS: [e.g. Fedora Server 43]
+- Client: [e.g. curl 8.15.0]
 
 **Additional context**
 Add any other context about the problem here.

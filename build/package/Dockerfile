@@ -58,7 +58,7 @@ LABEL \
   org.opencontainers.image.source="https://github.com/marvinruder/hetzner-dyndns" \
   org.opencontainers.image.vendor="Marvin A. Ruder" \
   org.opencontainers.image.licenses="MIT" \
-  org.opencontainers.image.version="0.4.0" \
+  org.opencontainers.image.version="0.5.0" \
   org.opencontainers.image.created=$BUILD_DATE
 
 HEALTHCHECK CMD wget -qO /dev/null http://localhost:8245/health || exit 1
