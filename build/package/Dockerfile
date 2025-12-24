@@ -45,7 +45,7 @@ COPY --from=ci /workdir/coverage/. .
 ENTRYPOINT [ "codacy-coverage" ]
 
 
-FROM alpine:3.23.0 AS deploy
+FROM alpine:3.23.2 AS deploy
 ARG TARGETARCH
 
 # Set OCI image labels
