@@ -73,18 +73,16 @@ func DynDnsRequest(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Decode username (zone) and password (token)
-	credentials, err := base64.StdEncoding.DecodeString((strings.Split(r.Header.Get("Authorization"), " ")[1]))
-	if err != nil || strings.Count(string(credentials), ":") != 1 {
+	zone, token, ok := r.BasicAuth()
+	if !ok {
 		logger.Error("Unable to decode Basic authorization header")
 		return &DynDnsError{Code: BadAuth}
 	}
-	zone, token := string(credentials[:strings.IndexByte(string(credentials), ':')]), string(credentials[strings.IndexByte(string(credentials), ':')+1:])
 	if os.Getenv("ZONE") != "" && zone != os.Getenv("ZONE") {
 		// deepcode ignore ClearTextLogging: zone is not a secret
 		logger.Error("Zone not configured", "zone", zone)
 		return &DynDnsError{Code: BadAgent}
 	}
-
 	if os.Getenv("TOKEN") != "" && token != os.Getenv("TOKEN") {
 		logger.Error("Wrong token provided")
 		return &DynDnsError{Code: BadAuth}
