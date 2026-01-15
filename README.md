@@ -10,6 +10,11 @@
 
 A proxy server for updating DNS records on Hetzner DNS using the DynDNS protocol.
 
+> [!CAUTION]
+> This project is unmaintained and will receive no further updates, as I personally have migrated away from both Hetzner DNS and hardware that only supports the DynDNS protocol.
+>
+> You are welcome to fork this repository and continue development on your own. If you are interested in maintaining a fork of this project, I’d be happy to link it here in the README.
+
 ## Usage
 
 ### Prerequisites
