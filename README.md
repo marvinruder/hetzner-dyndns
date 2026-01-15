@@ -10,6 +10,11 @@
 
 A proxy server for updating DNS records on Hetzner DNS using the DynDNS protocol.
 
+> [!CAUTION]
+> This project is unmaintained and will receive no further updates, as I personally have migrated away from both Hetzner DNS and hardware that only supports the DynDNS protocol.
+>
+> You are welcome to fork this repository and continue development on your own. If you are interested in maintaining a fork of this project, I’d be happy to link it here in the README.
+
 ## Usage
 
 ### Prerequisites
@@ -76,14 +81,11 @@ A detailed description of the DynDNS protocol is published by Oracle [here](http
 *   Only one IPv4 and one IPv6 address can be present for each hostname. If a resource record set contains multiple records, only one is updated. Do not add more than one record to a resource record set to avoid unexpected behavior.
 *   It is not checked whether a request contains a valid User-Agent header.
 
-## Contribute
-
-Contributions are welcome!
-
 ## License
 
 This software is provided under the conditions of the [MIT License](/LICENSE).
 
-## Authors
+## Contributors
 
 -   [Marvin A. Ruder (he/him)](https://github.com/marvinruder)
+-   [darkdragon-001](https://github.com/darkdragon-001)
